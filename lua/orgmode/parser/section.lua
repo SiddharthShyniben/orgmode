@@ -356,6 +356,50 @@ function Section:get_own_tags()
   return { unpack(self.own_tags) }
 end
 
+---@param name string
+---@return boolean
+function Section:has_own_tag(name)
+  return vim.tbl_contains(self:get_own_tags(), name)
+end
+
+---@param name string
+---@return boolean
+function Section:add_own_tag(name)
+  if not self:has_own_tag(name) then
+    local tags = self:get_own_tags()
+    table.insert(tags, name)
+    return self:set_own_tags(tags)
+  end
+end
+
+---@param name string
+---@return boolean
+function Section:remove_own_tag(name)
+  if self:has_tag(name) then
+    local tags = vim.tbl_filter(function(tag)
+      return tag ~= name
+    end, self.own_tags)
+    return self:set_own_tags(tags)
+  end
+  return false
+end
+
+---@param tags string[]
+---@return boolean
+function Section:set_own_tags(tags)
+  local line_without_tags = self.line
+    :gsub(vim.pesc(utils.tags_to_string(self:get_own_tags())) .. '%s*$', '')
+    :gsub('%s*$', '')
+  local spaces = 80 - math.min(line_without_tags:len(), 79)
+  local new_line = string.format('%s%s%s', line_without_tags, string.rep(' ', spaces), utils.tags_to_string(tags)):gsub(
+    '%s*$',
+    ''
+  )
+  self.own_tags = tags
+  vim.fn.setline(self.range.start_line, new_line)
+  return true
+end
+
 ---@return Date[]
 function Section:get_repeater_dates()
   return vim.tbl_filter(function(date)

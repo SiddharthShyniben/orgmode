@@ -62,20 +62,15 @@ function OrgMappings:set_tags()
   local headline = Files.get_closest_headline()
   local own_tags = headline:get_own_tags()
   local tags = vim.fn.OrgmodeInput('Tags: ', utils.tags_to_string(own_tags), Files.autocomplete_tags)
-  return self:_set_headline_tags(headline, tags)
+  return headline:set_own_tags(utils.parse_tags_string(tags))
 end
 
 function OrgMappings:toggle_archive_tag()
   local headline = Files.get_closest_headline()
-  local own_tags = headline:get_own_tags()
-  if vim.tbl_contains(own_tags, 'ARCHIVE') then
-    own_tags = vim.tbl_filter(function(tag)
-      return tag ~= 'ARCHIVE'
-    end, own_tags)
-  else
-    table.insert(own_tags, 'ARCHIVE')
+  if headline:has_own_tag('ARCHIVE') then
+    return headline:remove_own_tag('ARCHIVE')
   end
-  return self:_set_headline_tags(headline, utils.tags_to_string(own_tags))
+  return headline:add_own_tag('ARCHIVE')
 end
 
 function OrgMappings:cycle()
@@ -805,19 +800,6 @@ function OrgMappings:_adjust_date(amount, span, fallback)
   end
 
   return vim.api.nvim_feedkeys(utils.esc(fallback), 'n', true)
-end
-
-function OrgMappings:_set_headline_tags(headline, tags_string)
-  local tags = tags_string:gsub('^:+', ''):gsub(':+$', ''):gsub(':+', ':')
-  if tags ~= '' then
-    tags = ':' .. tags .. ':'
-  end
-  local line_without_tags = headline.line
-    :gsub(vim.pesc(utils.tags_to_string(headline:get_own_tags())) .. '%s*$', '')
-    :gsub('%s*$', '')
-  local spaces = 80 - math.min(line_without_tags:len(), 79)
-  local new_line = string.format('%s%s%s', line_without_tags, string.rep(' ', spaces), tags):gsub('%s*$', '')
-  return vim.fn.setline(headline.range.start_line, new_line)
 end
 
 ---@return string|nil
